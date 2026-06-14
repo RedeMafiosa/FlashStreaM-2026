@@ -78,6 +78,16 @@ const categories = [
 ];
 
 export default function Home() {
+
+  useEffect(() => {
+    const test = async () => {
+      const res = await db.entities.Stream.list();
+      console.log("STREAMS:", res);
+    };
+
+    test();
+  }, []);
+  
   const { data: streams = [], isLoading } = useQuery({
     queryKey: ["streams"],
     queryFn: async () => {
