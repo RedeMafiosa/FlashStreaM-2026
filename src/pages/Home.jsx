@@ -1,59 +1,11 @@
-const db = globalThis.__B44_DB__ || {
-  auth: {
-    isAuthenticated: async () => false,
-    me: async () => null,
-    loginViaEmailPassword: async () => {
-      throw new Error("DB não inicializada");
-    },
-    loginWithProvider: async () => {
-      throw new Error("DB não inicializada");
-    }
-  },
-
-  entities: new Proxy({}, {
-    get: (_, entityName) => ({
-      list: async () => {
-        console.warn(`DB não inicializada: ${entityName}.list()`);
-        return [];
-      },
-      filter: async () => {
-        console.warn(`DB não inicializada: ${entityName}.filter()`);
-        return [];
-      },
-      get: async () => {
-        console.warn(`DB não inicializada: ${entityName}.get()`);
-        return null;
-      },
-      create: async () => {
-        console.warn(`DB não inicializada: ${entityName}.create()`);
-        return null;
-      },
-      update: async () => {
-        console.warn(`DB não inicializada: ${entityName}.update()`);
-        return null;
-      },
-      delete: async () => {
-        console.warn(`DB não inicializada: ${entityName}.delete()`);
-        return null;
-      }
-    })
-  }),
-
-  integrations: {
-    Core: {
-      UploadFile: async () => {
-        console.warn("DB não inicializada: UploadFile()");
-        return { file_url: "" };
-      }
-    }
-  }
-};
-
+import { useEffect } from "react";
 import React from "react";
+
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+
 import {
   Zap,
   ArrowRight,
@@ -65,9 +17,71 @@ import {
   Trophy,
   GraduationCap
 } from "lucide-react";
+
 import { motion } from "framer-motion";
 import StreamCard from "@/components/stream/StreamCard";
 
+/* =========================
+   DB FALLBACK (IMPORTANTE)
+========================= */
+const db =
+  globalThis.__B44_DB__ || {
+    auth: {
+      isAuthenticated: async () => false,
+      me: async () => null,
+      loginViaEmailPassword: async () => {
+        throw new Error("DB não inicializada");
+      },
+      loginWithProvider: async () => {
+        throw new Error("DB não inicializada");
+      }
+    },
+
+    entities: new Proxy(
+      {},
+      {
+        get: (_, entityName) => ({
+          list: async () => {
+            console.warn(`DB não inicializada: ${entityName}.list()`);
+            return [];
+          },
+          filter: async () => {
+            console.warn(`DB não inicializada: ${entityName}.filter()`);
+            return [];
+          },
+          get: async () => {
+            console.warn(`DB não inicializada: ${entityName}.get()`);
+            return null;
+          },
+          create: async () => {
+            console.warn(`DB não inicializada: ${entityName}.create()`);
+            return null;
+          },
+          update: async () => {
+            console.warn(`DB não inicializada: ${entityName}.update()`);
+            return null;
+          },
+          delete: async () => {
+            console.warn(`DB não inicializada: ${entityName}.delete()`);
+            return null;
+          }
+        })
+      }
+    ),
+
+    integrations: {
+      Core: {
+        UploadFile: async () => {
+          console.warn("DB não inicializada: UploadFile()");
+          return { file_url: "" };
+        }
+      }
+    }
+  };
+
+/* =========================
+   CATEGORIAS
+========================= */
 const categories = [
   { icon: Gamepad2, label: "Gaming", key: "gaming", color: "from-red-500 to-orange-500" },
   { icon: Mic, label: "IRL", key: "irl", color: "from-blue-500 to-cyan-500" },
@@ -78,7 +92,9 @@ const categories = [
 ];
 
 export default function Home() {
-
+  /* =========================
+     TESTE (DEBUG)
+  ========================= */
   useEffect(() => {
     const test = async () => {
       const res = await db.entities.Stream.list();
@@ -87,13 +103,15 @@ export default function Home() {
 
     test();
   }, []);
-  
+
+  /* =========================
+     STREAMS QUERY
+  ========================= */
   const { data: streams = [], isLoading } = useQuery({
     queryKey: ["streams"],
     queryFn: async () => {
       const res = await db.entities.Stream.list();
 
-      // garante que viewers funciona mesmo sendo TEXT
       return res.map((s) => ({
         ...s,
         viewers: Number(s.viewers || 0)
@@ -102,7 +120,6 @@ export default function Home() {
   });
 
   const liveStreams = streams.filter((s) => s.status === "live");
-
   const featuredStream = liveStreams[0] || streams[0];
 
   return (
@@ -115,24 +132,24 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-primary/20 via-card to-card border border-border"
         >
-          <div className="grid md:grid-cols-2 gap-6 p-6 md:p-8 rounded">
+          <div className="grid md:grid-cols-2 gap-6 p-6 md:p-8">
 
             <div className="flex flex-col justify-center space-y-4">
               <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center glow-purple">
+                <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
                   <Zap className="w-6 h-6 text-white" />
                 </div>
-                <span className="font-display font-bold text-2xl tracking-wide">
+                <span className="font-bold text-2xl">
                   Flash<span className="text-primary">Stream</span>
                 </span>
               </div>
 
-              <h1 className="text-3xl md:text-4xl font-display font-bold leading-tight">
-                A tua plataforma de <span className="text-primary">livestream</span>
+              <h1 className="text-3xl md:text-4xl font-bold">
+                A tua plataforma de livestream
               </h1>
 
-              <p className="text-muted-foreground max-w-md">
-                Descobre streams incríveis e interage com criadores.
+              <p className="text-muted-foreground">
+                Descobre streams e criadores incríveis.
               </p>
 
               <div className="flex gap-3">
@@ -153,15 +170,14 @@ export default function Home() {
 
             <Link
               to={`/stream/${featuredStream.id}`}
-              className="relative aspect-video rounded-xl overflow-hidden group"
+              className="relative aspect-video rounded-xl overflow-hidden"
             >
               <img
                 src={
                   featuredStream.thumbnail_url ||
                   "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800"
                 }
-                alt={featuredStream.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                className="w-full h-full object-cover"
               />
 
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -171,12 +187,6 @@ export default function Home() {
                   🔴 AO VIVO
                 </Badge>
               )}
-
-              <div className="absolute bottom-3 left-3">
-                <p className="text-white font-semibold text-sm">
-                  {featuredStream.title}
-                </p>
-              </div>
             </Link>
           </div>
         </motion.section>
@@ -191,7 +201,7 @@ export default function Home() {
             <Link
               key={cat.key}
               to={`/streams?cat=${cat.key}`}
-              className="p-4 rounded-xl bg-card border hover:border-primary/40 text-center"
+              className="p-4 rounded-xl bg-card border text-center"
             >
               <div className={`w-12 h-12 mx-auto mb-2 rounded-xl bg-gradient-to-br ${cat.color}`} />
               <p className="text-sm">{cat.label}</p>
@@ -206,7 +216,7 @@ export default function Home() {
           <h2 className="text-lg font-bold mb-4">🔴 Ao Vivo</h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {liveStreams.slice(0, 8).map((stream) => (
+            {liveStreams.map((stream) => (
               <StreamCard key={stream.id} stream={stream} />
             ))}
           </div>
@@ -218,7 +228,7 @@ export default function Home() {
         <h2 className="text-lg font-bold mb-4">Recomendados</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {streams.slice(0, 8).map((stream) => (
+          {streams.map((stream) => (
             <StreamCard key={stream.id} stream={stream} />
           ))}
         </div>
